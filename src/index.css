@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+/* Extra xs breakpoint used by the 3D controls dock */
+@theme {
+  --breakpoint-xs: 26rem;
+}
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #030508;
+    color: #eef2f8;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+
+  /* Balanced, non-ragged display headings */
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Unified, consistent accessible focus ring */
+  :focus-visible {
+    outline: 2px solid rgb(167 139 250 / 0.85);
+    outline-offset: 2px;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Editorial typography system
+   ──────────────────────────────────────────────────────────────── */
+
+/* Tracked uppercase eyebrow label above section titles */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+/* Hero display line — fluid, tight, cinematic */
+.display-hero {
+  font-size: clamp(3rem, 6.2vw + 1.4rem, 7.25rem);
+  line-height: 0.96;
+  letter-spacing: -0.03em;
+}
+
+/* Section display heading — fluid editorial scale */
+.display-section {
+  font-size: clamp(1.8rem, 1.05rem + 2.4vw, 2.85rem);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
+}
+
+/* Comfortable reading measure for long-form paragraphs */
+.prose-measure {
+  max-width: 62ch;
+}
+
+/* Violet → cyan hairline used as a section signature */
+.hairline {
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    rgb(139 92 246 / 0.95),
+    rgb(34 211 238 / 0.8) 55%,
+    transparent
+  );
+}
+
+/* Gentle lift for interactive cards (composed with Tailwind hovers) */
+.card-lift {
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.4s ease,
+    box-shadow 0.5s ease,
+    background-color 0.4s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card-lift:hover {
+    transform: translateY(-4px);
+  }
+}
+
+/* Scroll-hint nudge for the hero indicator */
+@keyframes scroll-hint {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(6px); opacity: 1; }
+}
+
+.scroll-hint {
+  animation: scroll-hint 2.4s ease-in-out infinite;
+}
+
+/* Stage entrance for swapped showcase panels */
+@keyframes stage-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stage-enter {
+  animation: stage-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Hide scrollbars on horizontal pill rails */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #030508;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

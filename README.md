@@ -1,38 +1,84 @@
-# 🌐 Pawan Singh - Portfolio Website
+# PAWAN SINGH — Cinematic 3D Developer Portfolio
 
-Welcome to my personal **portfolio website**! 🚀  
-Showcasing my skills, projects, and achievements in a clean and modern design.  
+Premium, award-directed developer portfolio for **Pawan Singh** — Full Stack Developer & AI Builder
+(B.Tech CSE '28, Delhi Technical Campus, GGSIPU · CGPA 9.16).
 
----
+A dark, cinematic single-page experience built with **React 19 + Vite + Tailwind CSS 4 + Three.js + GSAP**,
+featuring a procedural chrome reactor core that travels through the page as you scroll.
 
-## ✨ Features
-✅ Responsive Design 📱  
-✅ About Me Section 🙋‍♂️  
-✅ Skills Showcase 💻  
-✅ Project Gallery 🖼️  
-✅ Contact Form ✉️  
+> Originally generated in AI Studio (app: https://ai.studio/apps/9f51041b-9f2e-4252-bcd3-83df748c53fd),
+> extensively rebuilt and art-directed as a cinematic 3D experience.
 
----
+## ✨ Experience
+
+- **Cinematic hero** — word-staggered title reveal, skippable intro sequence, magnetic CTAs,
+  editorial asymmetric composition with the 3D core staged beside the headline (never through it).
+- **Section-driven 3D storytelling** — the WebGL core re-frames itself for every chapter
+  (hero, about, skills, flagships, archive, achievements, GitHub, contact) with damped camera
+  choreography, counter-rotating gimbal rings, breathing emissive core, orbiting sensors & shards,
+  multi-depth starfields, shooting light streaks and pointer-reactive lighting.
+- **Live 3D controls dock** — Violet / Cyan / Chrome palettes, Explode Core, spin-speed slider,
+  cosmic dust toggle, procedural audio, Cinema Mode (`H` shortcut).
+- **Four flagship showcases** — MediVerse.AI, Swasth-Saathi, TrafficGuard Pro and ResQMap, each with a
+  bespoke procedural Three.js simulation, problem/solution/architecture tabs and verified links.
+- **Complete repository archive** — all 18 projects with live search, category filters and stack filters.
+- **Verified achievements, live GitHub API hub, recruiter contact portal** with mailto composer.
 
 ## 🛠️ Tech Stack
-| Technology  | Description |
-|-------------|-------------|
-| **HTML5**   | Structure of the website |
-| **CSS3**    | Styling & layout |
-| **JavaScript** | Interactivity & animations |
 
----
+| Layer | Technology |
+|-------|------------|
+| UI | React 19, TypeScript, Tailwind CSS 4 |
+| 3D | Three.js (procedural PBR, PMREM studio lighting, InstancedMesh) |
+| Motion | GSAP + ScrollTrigger choreography |
+| Audio | Procedural Web Audio API synthesizer (never autoplays) |
+| Build | Vite 8 |
 
-## 📂 Project Structure
+## 🚀 Run Locally
 
+**Prerequisites:** Node.js 20+
 
----
+```bash
+npm install
+npm run dev        # development server on http://localhost:3000
+```
 
-## 📬 Contact Me
-📧 **Email:** [pawan9140582015@gmail.com](mailto:pawan9140582015@gmail.com)  
-📱 **Mobile:** +91 9170336663  
-💻 **GitHub:** [pawan00207](https://github.com/pawan00207)  
+Other scripts:
 
----
+```bash
+npm run lint       # TypeScript check (tsc --noEmit)
+npm run build      # production build to dist/
+npm run preview    # serve the production build
+npm test           # node --test src/utils/portfolioLogic.test.ts
+```
 
-⭐ **If you like my work, give this repo a star!** ⭐
+> URL params: `?autostart=1` skips the cinematic intro. `prefers-reduced-motion` is fully respected.
+
+## 📁 Structure
+
+```
+src/
+├── App.tsx                      # scroll orchestration, reveals, scene config
+├── components/
+│   ├── Hero.tsx                 # cinematic hero stage
+│   ├── AboutSection.tsx         # editorial two-column identity
+│   ├── SkillsSection.tsx        # constellation / grid capability matrix
+│   ├── FlagshipSection.tsx      # flagship showcase stage
+│   ├── ProjectExplorer.tsx      # 18-repo searchable archive
+│   ├── AchievementsSection.tsx  # verified timeline
+│   ├── GitHubSection.tsx        # live GitHub API hub
+│   ├── ContactSection.tsx       # recruiter portal
+│   ├── ProjectDetailModal.tsx   # system blueprint modal
+│   ├── Navbar.tsx / Footer.tsx / ScrollProgressBar.tsx / SectionHeading.tsx
+│   └── canvas/
+│       ├── HeroCoreScene.tsx    # full-bleed procedural reactor core
+│       ├── Flagship3DCanvas.tsx # per-flagship simulations
+│       └── SceneControlsDock.tsx# 3D control dock
+├── data/portfolioData.ts        # all content (18 projects, profile, achievements)
+└── utils/                       # audio synth, filters + tests, motion helpers
+```
+
+## 📄 License
+
+Personal portfolio content © Pawan Singh. All project data, descriptions and links belong to their
+respective repositories.
