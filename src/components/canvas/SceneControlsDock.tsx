@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Eye, EyeOff, RotateCw, Layers, Volume2, VolumeX, Palette } from 'lucide-react';
+import { Sparkles, Eye, EyeOff, RotateCw, Layers, Volume2, VolumeX, Palette, Zap } from 'lucide-react';
 import type { SceneConfig } from './HeroCoreScene';
 import { soundManager } from '../../utils/audioSynth';
 
@@ -41,6 +41,12 @@ export const SceneControlsDock: React.FC<SceneControlsDockProps> = ({ config, on
     onChange({ ...config, explodedOffset: config.explodedOffset > 0 ? 0 : 0.85 });
   };
 
+  const handleBurstTrigger = () => {
+    soundManager.playBurst();
+    soundManager.playShockwave();
+    onChange({ ...config, burstTrigger: Date.now() });
+  };
+
   const handleAudioToggle = () => {
     const muted = soundManager.toggleMute();
     setIsAudioMuted(muted);
@@ -48,7 +54,7 @@ export const SceneControlsDock: React.FC<SceneControlsDockProps> = ({ config, on
 
   return (
     <div
-      className="fixed bottom-3 inset-x-0 mx-auto z-40 transition-transform duration-300 pointer-events-auto flex flex-col items-center max-w-xl px-3"
+      className="fixed bottom-3 inset-x-0 mx-auto z-40 transition-transform duration-300 pointer-events-auto flex flex-col items-center max-w-2xl px-3"
       style={{
         transform: isCollapsed ? 'translateY(calc(100% - 32px))' : 'translateY(0)',
       }}
@@ -128,6 +134,17 @@ export const SceneControlsDock: React.FC<SceneControlsDockProps> = ({ config, on
         >
           <Layers className="w-3.5 h-3.5" />
           <span>{config.explodedOffset > 0 ? 'Exploded' : 'Explode Core'}</span>
+        </button>
+
+        {/* Shockwave Burst Button */}
+        <button
+          onClick={handleBurstTrigger}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-cyan-500/40 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60 hover:border-cyan-400 font-mono text-[10px] sm:text-[11px] transition-all cursor-pointer shadow-sm active:scale-95"
+          title="Trigger kinetic shockwave burst ripple"
+          aria-label="Trigger kinetic shockwave burst"
+        >
+          <Zap className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Burst</span>
         </button>
 
         {/* Rotation Speed Control */}

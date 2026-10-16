@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { prefersReducedMotion } from '../../utils/motionPrefs';
+import { getResolvedAnimationConfig } from '../../config/animationConfig';
 
 export interface SceneConfig {
   palette: 'violet' | 'cyan' | 'chrome';
@@ -9,6 +10,7 @@ export interface SceneConfig {
   particlesEnabled: boolean;
   explodedOffset: number; // 0 to 1
   isZenMode: boolean;
+  burstTrigger?: number; // timestamp/counter triggering kinetic shockwave
 }
 
 interface HeroCoreSceneProps {
@@ -241,6 +243,8 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
     const container = mountRef.current;
     if (!container) return;
 
+    const animConfig = getResolvedAnimationConfig();
+
     // Headless test check for lossless software rendering
     const isHeadless =
       typeof navigator !== 'undefined' &&
@@ -250,8 +254,8 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
     const urlParams = new URLSearchParams(window.location.search);
     const autostart = urlParams.get('autostart') === '1';
     // Skippable scene intro (runs in parallel with the hero text timeline)
-    const runIntro = !reducedMotion && !autostart && !isHeadless;
-    const introDuration = 2.3;
+    const runIntro = !reducedMotion && !autostart && !isHeadless && animConfig.introSequence;
+    const introDuration = 2.4;
 
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
@@ -312,6 +316,11 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
     rimPointLight2.position.set(4.5, -3, 3);
     scene.add(rimPointLight2);
 
+    // Explosive impulse burst light
+    const burstFlashLight = new THREE.PointLight(0xffffff, 0, 18);
+    burstFlashLight.position.set(0, 0, 0);
+    scene.add(burstFlashLight);
+
     // Pointer-reactive fill light (desktop only, gently damped)
     const pointerLight = new THREE.PointLight(0xa78bfa, 0.0, 13);
     pointerLight.position.copy(_pointerLightPos);
@@ -325,14 +334,16 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
             accent: 0x06b6d4,
             secondary: 0x0284c7,
             glow: 0x38bdf8,
-            chromeRough: 0.1,
+            chromeRough: 0.08,
+            sparkColor: 0x67e8f9,
           };
         case 'chrome':
           return {
             accent: 0xe2e8f0,
             secondary: 0x94a3b8,
             glow: 0xffffff,
-            chromeRough: 0.05,
+            chromeRough: 0.04,
+            sparkColor: 0xf8fafc,
           };
         case 'violet':
         default:
@@ -340,7 +351,8 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
             accent: 0x8b5cf6,
             secondary: 0x6366f1,
             glow: 0xa855f7,
-            chromeRough: 0.12,
+            chromeRough: 0.1,
+            sparkColor: 0xc084fc,
           };
       }
     };
@@ -352,8 +364,8 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       color: 0xffffff,
       metalness: 0.96,
       roughness: currentColors.chromeRough,
-      clearcoat: 0.85,
-      clearcoatRoughness: 0.1,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.08,
       reflectivity: 1.0,
     });
 
@@ -362,7 +374,7 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       color: currentColors.secondary,
       metalness: 0.88,
       roughness: 0.22,
-      clearcoat: 0.6,
+      clearcoat: 0.65,
     });
 
     // Glass Transmissive Outer Geodesic Shell
@@ -382,7 +394,7 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
     const coreMaterial = new THREE.MeshPhysicalMaterial({
       color: currentColors.accent,
       emissive: currentColors.glow,
-      emissiveIntensity: 0.85,
+      emissiveIntensity: 0.9,
       metalness: 0.35,
       roughness: 0.18,
       clearcoat: 1.0,
@@ -393,7 +405,7 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       color: currentColors.accent,
       wireframe: true,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.45,
     });
 
     // Inner Crystalline Refraction Core
@@ -402,6 +414,16 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       metalness: 0.92,
       roughness: 0.04,
       clearcoat: 1.0,
+      emissive: currentColors.glow,
+      emissiveIntensity: 0.3,
+    });
+
+    // Energy Pulse Bead Material (Travelling Light along Ring Paths)
+    const pulseBeadMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
     });
 
     // 6. Assemble Composite Procedural Subject (THREE.Group)
@@ -427,28 +449,41 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
     ring3.rotation.y = Math.PI / 2.5;
     heroSubject.add(ring3);
 
-    // Part 4: Outer Geodesic Glass Icosahedron Shell
+    // Part 4: Travelling Energy Light Pulses along Ring Perimeters
+    const beadGeo = new THREE.SphereGeometry(0.065, 12, 12);
+    const beadRing1A = new THREE.Mesh(beadGeo, pulseBeadMat);
+    const beadRing1B = new THREE.Mesh(beadGeo, pulseBeadMat);
+    ring1.add(beadRing1A);
+    ring1.add(beadRing1B);
+
+    const beadRing2 = new THREE.Mesh(beadGeo, pulseBeadMat);
+    ring2.add(beadRing2);
+
+    const beadRing3 = new THREE.Mesh(beadGeo, pulseBeadMat);
+    ring3.add(beadRing3);
+
+    // Part 5: Outer Geodesic Glass Icosahedron Shell
     const icosaGeo = new THREE.IcosahedronGeometry(1.2, 1);
     const glassShell = new THREE.Mesh(icosaGeo, glassMaterial);
     glassShell.renderOrder = 2;
     heroSubject.add(glassShell);
 
-    // Part 5: Wireframe Geometric Structural Cage
+    // Part 6: Wireframe Geometric Structural Cage
     const wireframeCage = new THREE.Mesh(icosaGeo, wireframeMaterial);
     wireframeCage.scale.setScalar(1.025);
     heroSubject.add(wireframeCage);
 
-    // Part 6: Floating Central Energy Sphere
+    // Part 7: Floating Central Energy Sphere
     const coreGeo = new THREE.SphereGeometry(0.72, 32, 32);
     const energyCore = new THREE.Mesh(coreGeo, coreMaterial);
     heroSubject.add(energyCore);
 
-    // Part 7: Inner Crystalline Core (Faceted Octahedron)
+    // Part 8: Inner Crystalline Core (Faceted Octahedron)
     const innerCrystalGeo = new THREE.OctahedronGeometry(0.42, 0);
     const innerCrystal = new THREE.Mesh(innerCrystalGeo, innerCrystalMat);
     heroSubject.add(innerCrystal);
 
-    // Part 8: Radial Orbital Sensor Nodes (InstancedMesh - 8 nodes with harmonic oscillation)
+    // Part 9: Radial Orbital Sensor Nodes (InstancedMesh - 8 nodes with harmonic oscillation)
     const sensorNodeCount = 8;
     const sensorGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.16, 12);
     const sensorMesh = new THREE.InstancedMesh(sensorGeo, chromeMaterial, sensorNodeCount);
@@ -464,7 +499,7 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
     sensorMesh.instanceMatrix.needsUpdate = true;
     ring1.add(sensorMesh);
 
-    // Part 9: Floating Orbiting Data Shards (InstancedMesh - 24 faceted octahedrons on 3 orbital planes)
+    // Part 10: Floating Orbiting Data Shards (InstancedMesh - 24 faceted octahedrons on 3 orbital planes)
     const shardCount = isHeadless ? 8 : isSmallScreen ? 16 : 24;
     const shardGeo = new THREE.OctahedronGeometry(0.08, 0);
     const shardMesh = new THREE.InstancedMesh(shardGeo, titaniumMaterial, shardCount);
@@ -488,7 +523,45 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
     shardMesh.instanceMatrix.needsUpdate = true;
     heroSubject.add(shardMesh);
 
-    // Part 10: Ground Contact Shadow & Radial Horizon Plane
+    // Part 11: Kinetic Shockwave Ripple Mesh & Sparks (Expanding Energy Halo)
+    const shockwaveGeo = new THREE.RingGeometry(0.1, 0.4, 48);
+    const shockwaveMat = new THREE.MeshBasicMaterial({
+      color: currentColors.glow,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const shockwaveMesh = new THREE.Mesh(shockwaveGeo, shockwaveMat);
+    shockwaveMesh.visible = false;
+    heroSubject.add(shockwaveMesh);
+
+    // Kinetic Burst Sparks (Instanced particles emitted during burst)
+    const sparkCount = 36;
+    const sparkGeo = new THREE.TetrahedronGeometry(0.04, 0);
+    const sparkMat = new THREE.MeshBasicMaterial({
+      color: currentColors.sparkColor,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+    });
+    const sparkMesh = new THREE.InstancedMesh(sparkGeo, sparkMat, sparkCount);
+    const sparkVelocities: THREE.Vector3[] = [];
+    const sparkPositions: THREE.Vector3[] = [];
+    for (let i = 0; i < sparkCount; i++) {
+      const dir = new THREE.Vector3(
+        (Math.random() - 0.5) * 2,
+        (Math.random() - 0.5) * 2,
+        (Math.random() - 0.5) * 2
+      ).normalize();
+      sparkVelocities.push(dir.multiplyScalar(2.4 + Math.random() * 2.2));
+      sparkPositions.push(new THREE.Vector3(0, 0, 0));
+    }
+    sparkMesh.visible = false;
+    heroSubject.add(sparkMesh);
+
+    // Part 12: Ground Contact Shadow & Radial Horizon Plane
     const shadowGeo = new THREE.PlaneGeometry(8, 8);
     const canvas = document.createElement('canvas');
     canvas.width = 128;
@@ -516,7 +589,32 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
 
     scene.add(heroSubject);
 
-    // 7. Multi-Depth Starfields & Atmospheric Dust
+    // 7. Multi-Depth Starfields, Persistent Background Geometry & Atmospheric Dust
+    // Persistent Layer: Distant Floating Geometric Constellations
+    const bgGroup = new THREE.Group();
+    scene.add(bgGroup);
+
+    const satelliteTorusGeo = new THREE.TorusGeometry(0.8, 0.02, 12, 36);
+    const satelliteWireMat = new THREE.MeshBasicMaterial({
+      color: 0x6366f1,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.22,
+    });
+    const satelliteTorus = new THREE.Mesh(satelliteTorusGeo, satelliteWireMat);
+    satelliteTorus.position.set(-6.5, 3.2, -12);
+    bgGroup.add(satelliteTorus);
+
+    const satelliteIcosaGeo = new THREE.IcosahedronGeometry(0.7, 0);
+    const satelliteIcosa = new THREE.Mesh(satelliteIcosaGeo, satelliteWireMat);
+    satelliteIcosa.position.set(7.2, -3.8, -14);
+    bgGroup.add(satelliteIcosa);
+
+    const satelliteCubeGeo = new THREE.BoxGeometry(0.65, 0.65, 0.65);
+    const satelliteCube = new THREE.Mesh(satelliteCubeGeo, satelliteWireMat);
+    satelliteCube.position.set(5.5, 4.8, -10);
+    bgGroup.add(satelliteCube);
+
     // Layer 1: Deep Galactic Background Dust
     const bgParticleCount = isHeadless ? 250 : isSmallScreen ? 520 : 1000;
     const bgParticleGeo = new THREE.BufferGeometry();
@@ -589,9 +687,16 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
+    let lastMouseX = 0;
+    let mouseVelocityX = 0;
+
     const handlePointerMove = (e: MouseEvent) => {
-      _mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      _mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      const newMouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      const newMouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+      mouseVelocityX = newMouseX - lastMouseX;
+      lastMouseX = newMouseX;
+      _mouse.x = newMouseX;
+      _mouse.y = newMouseY;
     };
 
     const handleResize = () => {
@@ -618,6 +723,14 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
     let currentExposure = 1.15;
     let pointerLightIntensity = 0;
 
+    // Shockwave & Burst State
+    let lastHandledBurst = 0;
+    let burstActive = false;
+    let burstProgress = 0;
+    let cameraImpulse = 0;
+    let flashIntensity = 0;
+    let springExplodeOffset = 0;
+
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
@@ -629,6 +742,20 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       const currentConfig = configRef.current;
       const scroll = scrollRef.current; // 0 to 1, used for fine in-chapter drift
       const section = sectionRef.current;
+
+      // Check for incoming burst trigger
+      if (currentConfig.burstTrigger && currentConfig.burstTrigger !== lastHandledBurst) {
+        lastHandledBurst = currentConfig.burstTrigger;
+        burstActive = true;
+        burstProgress = 0;
+        cameraImpulse = 0.22;
+        flashIntensity = 3.6;
+        shockwaveMesh.visible = true;
+        sparkMesh.visible = true;
+        for (let i = 0; i < sparkCount; i++) {
+          sparkPositions[i].set(0, 0, 0);
+        }
+      }
 
       // Skippable cinematic scene intro: core illumination + ring alignment
       const introT = runIntro ? Math.min(1, time / introDuration) : 1;
@@ -643,6 +770,8 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
         wireframeMaterial.color.setHex(currentColors.accent);
         titaniumMaterial.color.setHex(currentColors.secondary);
         rimPointLight1.color.setHex(currentColors.accent);
+        shockwaveMat.color.setHex(currentColors.glow);
+        sparkMat.color.setHex(currentColors.sparkColor);
       }
 
       // ── Resolve chapter pose (desktop / mobile art direction) ──
@@ -670,6 +799,18 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       ring3.rotation.x = Math.PI / 2.5 + Math.sin(p3 * 0.8) * 0.25;
       ring3.rotation.z = Math.cos(p1) * 0.3;
 
+      // Travelling Energy Light Pulses along Rings (Physical Signal Nodes)
+      const tPulse1A = time * 1.6;
+      beadRing1A.position.set(Math.cos(tPulse1A) * 2.1, Math.sin(tPulse1A) * 2.1, 0);
+      const tPulse1B = time * 1.6 + Math.PI;
+      beadRing1B.position.set(Math.cos(tPulse1B) * 2.1, Math.sin(tPulse1B) * 2.1, 0);
+
+      const tPulse2 = -time * 1.9;
+      beadRing2.position.set(Math.cos(tPulse2) * 1.8, Math.sin(tPulse2) * 1.8, 0);
+
+      const tPulse3 = time * 2.2;
+      beadRing3.position.set(Math.cos(tPulse3) * 1.5, Math.sin(tPulse3) * 1.5, 0);
+
       // Geodesic Glass Shell & Cage
       glassShell.rotation.y += 0.4 * speed * delta;
       glassShell.rotation.x = Math.sin(p1 * 0.5) * 0.2;
@@ -685,11 +826,15 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       const breath1 = Math.sin(time * 2.2);
       const breath2 = Math.sin(time * 5.4) * 0.15;
       const corePulse = 0.75 + breath1 * 0.25 + breath2;
-      coreMaterial.emissiveIntensity = corePulse * (0.15 + 0.85 * introEase);
+      coreMaterial.emissiveIntensity = corePulse * (0.15 + 0.85 * introEase) + flashIntensity * 0.5;
 
       // Light breathing reaction (studio lights harmonize with core energy)
       rimPointLight1.intensity = (3.0 + breath1 * 1.2) * (0.25 + 0.75 * introEase);
       rimPointLight2.intensity = 2.0 + Math.cos(time * 2.2) * 0.8;
+
+      // Explosive flash damping
+      flashIntensity = THREE.MathUtils.damp(flashIntensity, 0, 6, delta);
+      burstFlashLight.intensity = flashIntensity;
 
       // Pointer-reactive fill light follows the cursor with damping
       const targetPointerIntensity = isSmallScreen || reducedMotion ? 0 : 0.85;
@@ -713,12 +858,15 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       }
       sensorMesh.instanceMatrix.needsUpdate = true;
 
-      // Multi-layer Orbiting Shard Dynamics
+      // Spring-based exploded offset interpolation
       const targetExplode = currentConfig.explodedOffset;
+      springExplodeOffset = THREE.MathUtils.damp(springExplodeOffset, targetExplode, 5.5, delta);
+
+      // Multi-layer Orbiting Shard Dynamics
       for (let i = 0; i < shardCount; i++) {
         const item = shardData[i];
         item.angle += item.speed * speed * delta;
-        const radius = item.radius * (1 + targetExplode * 0.6);
+        const radius = item.radius * (1 + springExplodeOffset * 0.6);
 
         // Plane 0: Equatorial, Plane 1: Polar, Plane 2: Inclined 45°
         let x = Math.cos(item.angle) * radius;
@@ -739,25 +887,53 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
 
         _tempPos.set(x, y, z);
         _tempQuat.setFromEuler(new THREE.Euler(item.tilt + time * 0.6, item.angle, time * 0.4));
-        _tempScale.setScalar((0.7 + (i % 4) * 0.25) * (1 - targetExplode * 0.15));
+        _tempScale.setScalar((0.7 + (i % 4) * 0.25) * (1 - springExplodeOffset * 0.15));
         _tempMatrix.compose(_tempPos, _tempQuat, _tempScale);
         shardMesh.setMatrixAt(i, _tempMatrix);
       }
       shardMesh.instanceMatrix.needsUpdate = true;
 
-      // Exploded-View Scale Interpolation (rings bloom open, staged by intro)
-      const explodeRing1 = 1.0 + targetExplode * 0.65;
-      const explodeRing2 = 1.0 + targetExplode * 0.45;
-      const explodeRing3 = 1.0 + targetExplode * 0.25;
+      // Exploded-View Scale Interpolation (rings bloom open along natural axes)
+      const explodeRing1 = 1.0 + springExplodeOffset * 0.65;
+      const explodeRing2 = 1.0 + springExplodeOffset * 0.45;
+      const explodeRing3 = 1.0 + springExplodeOffset * 0.25;
       const ringBloom = 0.55 + 0.45 * introEase;
 
       ring1.scale.setScalar(THREE.MathUtils.damp(ring1.scale.x, explodeRing1 * ringBloom, 6, delta));
       ring2.scale.setScalar(THREE.MathUtils.damp(ring2.scale.x, explodeRing2 * ringBloom, 6, delta));
       ring3.scale.setScalar(THREE.MathUtils.damp(ring3.scale.x, explodeRing3 * ringBloom, 6, delta));
-      glassShell.scale.setScalar(THREE.MathUtils.damp(glassShell.scale.x, ringBloom, 6, delta));
-      wireframeCage.scale.setScalar(THREE.MathUtils.damp(wireframeCage.scale.x, ringBloom * 1.025, 6, delta));
+      glassShell.scale.setScalar(THREE.MathUtils.damp(glassShell.scale.x, (1 + springExplodeOffset * 0.35) * ringBloom, 6, delta));
+      wireframeCage.scale.setScalar(THREE.MathUtils.damp(wireframeCage.scale.x, (1 + springExplodeOffset * 0.4) * ringBloom * 1.025, 6, delta));
 
-      // Starfield Twinkle & Ambient Cosmic Drift
+      // Kinetic Shockwave & Spark Animation
+      if (burstActive) {
+        burstProgress += delta * 1.8;
+        if (burstProgress >= 1.0) {
+          burstActive = false;
+          shockwaveMesh.visible = false;
+          sparkMesh.visible = false;
+        } else {
+          // Expanding planar shockwave
+          const shockScale = burstProgress * 6.5;
+          shockwaveMesh.scale.setScalar(shockScale);
+          shockwaveMesh.rotation.z += delta * 0.8;
+          shockwaveMat.opacity = Math.sin(burstProgress * Math.PI) * 0.85;
+
+          // Propelling spark fragments
+          for (let i = 0; i < sparkCount; i++) {
+            sparkPositions[i].addScaledVector(sparkVelocities[i], delta * (1 - burstProgress * 0.5));
+            _tempPos.copy(sparkPositions[i]);
+            _tempQuat.setFromEuler(new THREE.Euler(time * 4 + i, time * 3, 0));
+            _tempScale.setScalar(Math.max(0.01, 1 - burstProgress));
+            _tempMatrix.compose(_tempPos, _tempQuat, _tempScale);
+            sparkMesh.setMatrixAt(i, _tempMatrix);
+          }
+          sparkMesh.instanceMatrix.needsUpdate = true;
+          sparkMat.opacity = Math.max(0, 1 - burstProgress * 1.2);
+        }
+      }
+
+      // Starfield Twinkle, Ambient Cosmic Drift & Background Geometry
       if (currentConfig.particlesEnabled) {
         bgParticles.rotation.y = time * 0.01;
         midParticles.rotation.y = -time * 0.018;
@@ -765,9 +941,19 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
         midMat.opacity = 0.5 + Math.sin(time * 3.0) * 0.2; // Twinkle
         bgParticles.visible = true;
         midParticles.visible = true;
+
+        // Background floating geometries tumble slowly
+        satelliteTorus.rotation.x += delta * 0.15;
+        satelliteTorus.rotation.y += delta * 0.2;
+        satelliteIcosa.rotation.y += delta * 0.18;
+        satelliteIcosa.rotation.z += delta * 0.12;
+        satelliteCube.rotation.x += delta * 0.25;
+        satelliteCube.rotation.y += delta * 0.22;
+        bgGroup.visible = true;
       } else {
         bgParticles.visible = false;
         midParticles.visible = false;
+        bgGroup.visible = false;
       }
 
       // Periodic Shooting Star / Light Streak Sweep (every 7-9 seconds)
@@ -830,14 +1016,18 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       const targetScale = activePose.scale * (0.22 + 0.78 * introEase);
       heroSubject.scale.setScalar(THREE.MathUtils.damp(heroSubject.scale.x, targetScale, 3.4, delta));
 
-      // ── Camera choreography: per-chapter distance, pointer parallax, slow drift ──
+      // ── Camera choreography: per-chapter distance, pointer parallax, slow drift & banking ──
       const driftX = Math.sin(time * 0.18) * 0.2;
       const driftY = Math.cos(time * 0.15) * 0.15;
       const parallax = activePose.parallax;
+
+      // Camera impulse recoil from burst
+      cameraImpulse = THREE.MathUtils.damp(cameraImpulse, 0, 4.5, delta);
+
       _targetCameraPos.set(
         _mouse.x * 1.3 * parallax + driftX,
         _mouse.y * 0.9 * parallax + driftY,
-        activePose.camZ + Math.sin(scroll * Math.PI) * 0.35
+        activePose.camZ + Math.sin(scroll * Math.PI) * 0.35 + cameraImpulse
       );
 
       _currentCameraPos.x = THREE.MathUtils.damp(_currentCameraPos.x, _targetCameraPos.x, 3.0, delta);
@@ -851,6 +1041,10 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       _currentLookAt.y = THREE.MathUtils.damp(_currentLookAt.y, _targetLookAt.y, 3.2, delta);
       _currentLookAt.z = THREE.MathUtils.damp(_currentLookAt.z, _targetLookAt.z, 3.2, delta);
       camera.lookAt(_currentLookAt);
+
+      // Controlled Camera Banking (subtle roll on mouse pan)
+      const targetBank = -_mouse.x * 0.025 * parallax;
+      camera.rotation.z = THREE.MathUtils.damp(camera.rotation.z, targetBank, 3.5, delta);
 
       // Cinematic exposure grading per chapter (protects text contrast)
       currentExposure = THREE.MathUtils.damp(currentExposure, activePose.exposure, 3, delta);
@@ -871,15 +1065,21 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       ring1Geo.dispose();
       ring2Geo.dispose();
       ring3Geo.dispose();
+      beadGeo.dispose();
       icosaGeo.dispose();
       coreGeo.dispose();
       innerCrystalGeo.dispose();
       sensorGeo.dispose();
       shardGeo.dispose();
+      shockwaveGeo.dispose();
+      sparkGeo.dispose();
       shadowGeo.dispose();
       bgParticleGeo.dispose();
       midGeo.dispose();
       streakGeo.dispose();
+      satelliteTorusGeo.dispose();
+      satelliteIcosaGeo.dispose();
+      satelliteCubeGeo.dispose();
 
       chromeMaterial.dispose();
       titaniumMaterial.dispose();
@@ -887,11 +1087,15 @@ export const HeroCoreScene: React.FC<HeroCoreSceneProps> = ({
       coreMaterial.dispose();
       wireframeMaterial.dispose();
       innerCrystalMat.dispose();
+      pulseBeadMat.dispose();
+      shockwaveMat.dispose();
+      sparkMat.dispose();
       shadowMat.dispose();
       shadowTex.dispose();
       bgParticleMat.dispose();
       midMat.dispose();
       streakMat.dispose();
+      satelliteWireMat.dispose();
       envTexture.dispose();
 
       renderer.dispose();

@@ -286,6 +286,18 @@ export const Flagship3DCanvas: React.FC<Flagship3DCanvasProps> = ({ flagshipId }
       group.add(radarCone);
       disposables.push(arcGeo, arcMat);
 
+      // Highway center divider marker lights
+      const markerCount = 6;
+      const markerGeo = new THREE.BoxGeometry(0.08, 0.02, 0.35);
+      const markerMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+      disposables.push(markerGeo, markerMat);
+      const markers: THREE.Mesh[] = [];
+      for (let i = 0; i < markerCount; i++) {
+        const marker = new THREE.Mesh(markerGeo, markerMat);
+        group.add(marker);
+        markers.push(marker);
+      }
+
       updateCallbacks.push((time, delta) => {
         // Vehicle 1 moves forward along lane 1
         const lane1Z = ((time * 1.8) % 6) - 3;
@@ -294,6 +306,12 @@ export const Flagship3DCanvas: React.FC<Flagship3DCanvasProps> = ({ flagshipId }
         // Vehicle 2 moves along lane 2 with alert status near trigger zone
         const lane2Z = 3 - ((time * 1.5) % 6);
         car2.position.set(1.1, -0.32, lane2Z);
+
+        // Marker lights streaming along center divider
+        for (let i = 0; i < markerCount; i++) {
+          const z = (((time * 2.2 + i * 1.0) % 6) - 3);
+          markers[i].position.set(0, -0.48, z);
+        }
 
         // Radar 360-degree sweep
         radarCone.rotation.y += delta * 1.8;

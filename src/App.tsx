@@ -20,6 +20,7 @@ import { AchievementsSection } from './components/AchievementsSection';
 import { GitHubSection } from './components/GitHubSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
+import { GlobalEffects } from './components/GlobalEffects';
 import { prefersReducedMotion } from './utils/motionPrefs';
 import { Project } from './data/portfolioData';
 
@@ -42,6 +43,7 @@ export default function App() {
     particlesEnabled: true,
     explodedOffset: 0,
     isZenMode: false,
+    burstTrigger: 0,
   });
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -174,6 +176,9 @@ export default function App() {
 
       {/* Topmost Violet Journey Scroll Progress Bar */}
       <ScrollProgressBar />
+
+      {/* Interactive Cursor Glow & Ambient Pooled Ripples */}
+      <GlobalEffects palette={sceneConfig.palette} />
 
       {/* Top Navbar */}
       <Navbar activeSection={activeSection} onNavigate={scrollToSection} />

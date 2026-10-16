@@ -92,8 +92,9 @@ export const SkillsSection: React.FC = () => {
 
           {/* Dynamic Nodes Grid with Interactive Orbit Aesthetic */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {allSkills.map((skill) => {
+            {allSkills.map((skill, idx) => {
               const isSelected = selectedSkill === skill.name;
+              const floatClass = `skill-float-${idx % 3}`;
               return (
                 <div
                   key={skill.name}
@@ -101,10 +102,10 @@ export const SkillsSection: React.FC = () => {
                     soundManager.playChime(600, 0.06);
                     setSelectedSkill(skill.name);
                   }}
-                  className={`card-lift p-4 rounded-xl border transition-colors cursor-pointer relative group ${
+                  className={`card-lift ${floatClass} p-4 rounded-xl border transition-all duration-300 cursor-pointer relative group ${
                     isSelected
-                      ? 'bg-violet-950/40 border-violet-500 shadow-lg shadow-violet-950/60 -translate-y-1'
-                      : 'bg-[#0a0f1a]/80 border-neutral-800/80 hover:border-neutral-700 hover:bg-[#0e1524]'
+                      ? 'bg-violet-950/40 border-violet-500 shadow-xl shadow-violet-950/70 -translate-y-1.5'
+                      : 'bg-[#0a0f1a]/80 border-neutral-800/80 hover:border-cyan-500/50 hover:bg-[#0e1524] hover:shadow-lg hover:shadow-cyan-950/30'
                   }`}
                   role="button"
                   tabIndex={0}

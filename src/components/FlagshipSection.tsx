@@ -4,6 +4,7 @@ import { PROJECTS_DATA, Project } from '../data/portfolioData';
 import { Flagship3DCanvas } from './canvas/Flagship3DCanvas';
 import { soundManager } from '../utils/audioSynth';
 import { SectionHeading } from './SectionHeading';
+import { useCardTilt } from '../utils/useCardTilt';
 
 interface FlagshipSectionProps {
   onSelectProject: (project: Project) => void;
@@ -13,6 +14,7 @@ export const FlagshipSection: React.FC<FlagshipSectionProps> = ({ onSelectProjec
   const flagships = PROJECTS_DATA.filter((p) => p.isFlagship);
   const [activeTab, setActiveTab] = useState<string>(flagships[0]?.id || 'mediverse-ai');
   const [viewTab, setViewTab] = useState<'solution' | 'architecture' | 'features'>('solution');
+  const cardTiltRef = useCardTilt<HTMLDivElement>({ maxTilt: 4, perspective: 1200, scale: 1.005, glare: true });
 
   const currentFlagship = flagships.find((f) => f.id === activeTab) || flagships[0];
 
@@ -83,6 +85,7 @@ export const FlagshipSection: React.FC<FlagshipSectionProps> = ({ onSelectProjec
 
       {/* Flagship Detail Stage */}
       <div
+        ref={cardTiltRef}
         data-reveal
         className="rounded-2xl bg-[#070b13] border border-white/[0.07] p-6 sm:p-8 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative overflow-hidden"
       >

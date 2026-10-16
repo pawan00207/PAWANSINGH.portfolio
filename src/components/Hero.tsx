@@ -29,14 +29,22 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick, onProjectsClick }) =
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
 
   useEffect(() => {
-    // Check for reduced motion preference or ?autostart=1 query param
+    // Check for reduced motion preference or explicit autostart query param
     const prefersReducedMotion =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const urlParams = new URLSearchParams(window.location.search);
     const autostart = urlParams.get('autostart') === '1';
+    const forceIntro = urlParams.get('intro') === '1';
 
-    if (prefersReducedMotion || autostart) {
+    let alreadySeen = false;
+    try {
+      alreadySeen = !forceIntro && sessionStorage.getItem('pawan_portfolio_intro_seen') === '1';
+    } catch {
+      // Storage fallback
+    }
+
+    if (prefersReducedMotion || autostart || alreadySeen) {
       setIntroFinished(true);
       return;
     }
@@ -48,26 +56,37 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick, onProjectsClick }) =
     const tl = gsap.timeline({
       onComplete: () => {
         setIntroFinished(true);
+        try {
+          sessionStorage.setItem('pawan_portfolio_intro_seen', '1');
+        } catch {
+          // Silent fallback
+        }
       },
     });
     timelineRef.current = tl;
 
-    // Initial state
+    // Initial state with 3D perspective rotation
     gsap.set([badgeRef.current, subtitleRef.current, copyRef.current, ctaRef.current, scrollIndicatorRef.current], {
       opacity: 0,
     });
-    gsap.set(heroWords, { opacity: 0, y: '0.55em', letterSpacing: '0.05em' });
-    gsap.set(subtitleRef.current, { y: 20, letterSpacing: '0.35em' });
+    gsap.set(heroWords, {
+      opacity: 0,
+      y: '0.6em',
+      rotateX: 35,
+      transformOrigin: '50% 100%',
+      letterSpacing: '0.04em',
+    });
+    gsap.set(subtitleRef.current, { y: 18, letterSpacing: '0.35em' });
     gsap.set(badgeRef.current, { y: -15, scale: 0.9 });
     gsap.set(copyRef.current, { y: 15 });
     gsap.set(ctaRef.current, { y: 20 });
     gsap.set(lightSweepRef.current, { x: '-100%', opacity: 0 });
 
-    // Choreographed cinematic entrance (≈2.6 seconds total)
+    // Choreographed cinematic entrance (≈2.4 seconds total)
     tl.to(lightSweepRef.current, {
-      opacity: 0.8,
+      opacity: 0.85,
       x: '100%',
-      duration: 1.2,
+      duration: 1.1,
       ease: 'power2.inOut',
     })
       .to(
@@ -79,19 +98,20 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick, onProjectsClick }) =
           duration: 0.6,
           ease: 'back.out(1.4)',
         },
-        '-=0.8'
+        '-=0.75'
       )
       .to(
         heroWords,
         {
           opacity: 1,
           y: 0,
+          rotateX: 0,
           letterSpacing: '-0.03em',
           duration: 0.95,
-          stagger: 0.14,
+          stagger: 0.15,
           ease: 'power3.out',
         },
-        '-=0.4'
+        '-=0.45'
       )
       .to(
         subtitleRef.current,
@@ -146,6 +166,11 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick, onProjectsClick }) =
       timelineRef.current.progress(1);
     }
     setIntroFinished(true);
+    try {
+      sessionStorage.setItem('pawan_portfolio_intro_seen', '1');
+    } catch {
+      // Storage fallback
+    }
   };
 
   return (
@@ -179,13 +204,18 @@ export const Hero: React.FC<HeroProps> = ({ onExploreClick, onProjectsClick }) =
             <span>B.Tech CSE '28 · DTC (GGSIPU) · CGPA 9.16</span>
           </div>
 
-          {/* Cinematic Main Title — word-staggered line reveal */}
+          {/* Cinematic Main Title — 3D perspective line reveal with subtle hover shimmer */}
           <h1
             ref={titleRef}
-            className="font-display font-bold display-hero text-white mb-5 drop-shadow-[0_12px_42px_rgba(139,92,246,0.35)]"
+            aria-label="Pawan Singh"
+            className="font-display font-bold display-hero text-white mb-5 drop-shadow-[0_12px_42px_rgba(139,92,246,0.35)] [perspective:800px]"
           >
-            <span className="hero-word inline-block will-change-transform">PAWAN</span>{' '}
-            <span className="hero-word inline-block will-change-transform">SINGH</span>
+            <span className="hero-word inline-block will-change-transform transition-all duration-300 hover:text-cyan-200 cursor-default">
+              PAWAN
+            </span>{' '}
+            <span className="hero-word inline-block will-change-transform transition-all duration-300 hover:text-violet-200 cursor-default">
+              SINGH
+            </span>
           </h1>
 
           {/* Subtitle with Restrained High-Tech Spacing */}
