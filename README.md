@@ -1,14 +1,5 @@
 # PAWAN SINGH — Cinematic 3D Developer Portfolio
 
-Premium, award-directed developer portfolio for **Pawan Singh** — Full Stack Developer & AI Builder
-(B.Tech CSE '28, Delhi Technical Campus, GGSIPU · CGPA 9.16).
-
-A dark, cinematic single-page experience built with **React 19 + Vite + Tailwind CSS 4 + Three.js + GSAP**,
-featuring a procedural chrome reactor core that travels through the page as you scroll.
-
-> Originally generated in AI Studio (app: https://ai.studio/apps/9f51041b-9f2e-4252-bcd3-83df748c53fd),
-> extensively rebuilt and art-directed as a cinematic 3D experience.
-
 ## ✨ Experience
 
 - **Cinematic hero** — word-staggered title reveal, skippable intro sequence, magnetic CTAs,
